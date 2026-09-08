@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0f766e">
+<meta name="description" content="Offline prepaid electricity meter ledger — track recharges, balance checks, and daily/monthly consumption.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
 <title>Prepaid Meter Ledger</title>
 <style>
 :root{--bg:#f5f7f8;--card:#fff;--text:#17212b;--muted:#66737f;--primary:#0f766e;--primary2:#115e59;--line:#e4e9ed;--danger:#b42318;--soft:#e7f5f2}
@@ -143,6 +147,19 @@ footer{color:var(--muted);font-size:11px;text-align:center;padding:15px}
 <hr style="border:0;border-top:1px solid var(--line);margin:15px 0">
 <button class="danger" onclick="resetAll()">সব data মুছে ফেলুন</button>
 </div>
+
+<div class="card"><h2>☁ Cloud Backup (GitHub Gist)</h2>
+<p style="font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 10px">আপনার নিজের GitHub account-এর একটি secret Gist-এ backup রাখা হবে। শুধু <b>gist</b> permission-এর একটি Personal Access Token লাগবে — repo access লাগবে না। Token শুধু আপনার ফোনের browser-এ থাকে, অন্য কোথাও পাঠানো হয় না।</p>
+<div class="actions"><button class="secondary" onclick="window.open('https://github.com/settings/tokens/new?scopes=gist&description=Prepaid%20Meter%20Ledger%20Backup','_blank')">🔑 Token তৈরি করুন</button></div>
+<label>GitHub Personal Access Token</label><input id="cloudToken" type="password" placeholder="ghp_...">
+<div class="actions"><button class="primary" onclick="saveCloudToken()">Save Token</button></div>
+<label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:600;font-size:13px"><input id="autoBackupChk" type="checkbox" style="width:auto"> প্রতিটি entry save-এ automatic cloud backup</label>
+<div class="actions" style="margin-top:10px">
+<button class="primary" onclick="backupToCloud(true)">☁ Backup Now</button>
+<button class="secondary" onclick="restoreFromCloud()">⬇ Restore from Cloud</button>
+</div>
+<div id="cloudStatus" class="notice" style="margin-top:10px">Cloud backup এখনো সেটআপ করা হয়নি।</div>
+</div>
 </section>
 <footer>Prepaid Meter Ledger • Data stays on this device/browser</footer>
 </main>
@@ -167,7 +184,7 @@ function saveEntry(){
  else{e.balance=+document.getElementById('balance').value;if(isNaN(e.balance)||e.balance<0)return alert('সঠিক balance দিন।');e.tier=document.getElementById('tier').value||null;e.energyCost=+document.getElementById('energyCost').value||null;e.units=+document.getElementById('units').value||null}
  data.entries.push(e);data.entries.sort((a,b)=>new Date(a.dt)-new Date(b.dt));persist();clearForm();alert('Entry saved ✓');showPage('dashboard')
 }
-function persist(){localStorage.setItem(KEY,JSON.stringify(data));renderAll()}
+function persist(){localStorage.setItem(KEY,JSON.stringify(data));renderAll();if(data.cloud&&data.cloud.autoBackup&&data.cloud.token){backupToCloud(false)}}
 function sorted(){return [...data.entries].sort((a,b)=>new Date(a.dt)-new Date(b.dt))}
 function balanceChecks(){return sorted().filter(e=>e.type!=='recharge')}
 function latestBalance(){let a=balanceChecks();return a.length?a[a.length-1].balance:null}
@@ -356,7 +373,7 @@ function calcTariff(){
  for(let [limit,rate] of slabs){let take=Math.max(0,Math.min(u,limit)-prev);r+=take*rate;prev=limit;if(u<=limit)break}
  document.getElementById('tariffResult').innerHTML=u?`Energy charge ≈ <b>${money(r)}</b> (শুধু slab energy rate; VAT/demand/other prepaid deductions ধরা হয়নি)।`:'Unit লিখলে আনুমানিক energy charge দেখাবে।'
 }
-function downloadBackup(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='prepaid-meter-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
+function downloadBackup(){let exportData={...data,cloud:data.cloud?{...data.cloud,token:undefined}:undefined};let blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='prepaid-meter-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
 function restoreBackup(ev){
  let f=ev.target.files[0]; if(!f)return;
  let r=new FileReader();
@@ -375,8 +392,79 @@ function restoreBackup(ev){
  };
  r.readAsText(f);
 }
+function ensureCloud(){if(!data.cloud)data.cloud={token:null,gistId:null,autoBackup:false,lastSync:null}}
+function renderCloudStatus(msg){const el=document.getElementById('cloudStatus');if(el)el.innerHTML=msg}
+function saveCloudToken(){
+ensureCloud();
+data.cloud.token=document.getElementById('cloudToken').value.trim();
+localStorage.setItem(KEY,JSON.stringify(data));
+renderCloudStatus(data.cloud.token?'Token saved ✓ — এখন "Backup Now" চাপুন।':'Token খালি রাখা হয়েছে।');
+}
+async function backupToCloud(manual){
+ensureCloud();
+const token=data.cloud.token;
+if(!token){if(manual)alert('আগে GitHub Token সেভ করুন।');return}
+if(manual)renderCloudStatus('Backing up…');
+try{
+const content=JSON.stringify({entries:data.entries},null,2);
+const body={description:'Prepaid Meter Ledger Backup',public:false,files:{'prepaid-meter-backup.json':{content}}};
+let url='https://api.github.com/gists',method='POST';
+if(data.cloud.gistId){url='https://api.github.com/gists/'+data.cloud.gistId;method='PATCH'}
+const res=await fetch(url,{method,headers:{'Authorization':'token '+token,'Accept':'application/vnd.github+json'},body:JSON.stringify(body)});
+if(!res.ok)throw new Error('HTTP '+res.status);
+const j=await res.json();
+data.cloud.gistId=j.id;
+data.cloud.lastSync=new Date().toISOString();
+localStorage.setItem(KEY,JSON.stringify(data));
+renderCloudStatus('✓ Synced — '+fmtDate(data.cloud.lastSync)+' · <a href="'+j.html_url+'" target="_blank" rel="noopener">Gist দেখুন</a>');
+}catch(e){
+renderCloudStatus('❌ Backup failed: '+e.message+' — Token সঠিক ও "gist" scope আছে কিনা দেখুন।');
+}
+}
+async function restoreFromCloud(){
+ensureCloud();
+const token=data.cloud.token;
+if(!token){alert('আগে GitHub Token সেভ করুন।');return}
+let gistId=data.cloud.gistId;
+if(!gistId){
+gistId=prompt('Gist ID বা URL দিন (অন্য ডিভাইস থেকে restore করলে):');
+if(!gistId)return;
+const m=gistId.match(/([a-f0-9]{20,})/i);
+if(m)gistId=m[1];
+}
+renderCloudStatus('Restoring…');
+try{
+const res=await fetch('https://api.github.com/gists/'+gistId,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github+json'}});
+if(!res.ok)throw new Error('HTTP '+res.status);
+const j=await res.json();
+const file=Object.values(j.files)[0];
+const parsed=JSON.parse(file.content);
+if(!parsed||!Array.isArray(parsed.entries))throw new Error('format');
+if(confirm('বর্তমান data replace করে cloud থেকে restore করবেন?')){
+data.entries=parsed.entries;
+data.cloud.gistId=gistId;
+data.cloud.lastSync=new Date().toISOString();
+persist();
+renderCloudStatus('✓ Restored from cloud — '+fmtDate(data.cloud.lastSync));
+}
+}catch(e){
+renderCloudStatus('❌ Restore failed: '+e.message);
+}
+}
 function resetAll(){if(confirm('সব data স্থায়ীভাবে মুছে ফেলবেন?')){localStorage.removeItem(KEY);data={entries:[]};renderAll()}}
 renderAll();
+ensureCloud();
+document.getElementById('cloudToken').value=data.cloud.token||'';
+document.getElementById('autoBackupChk').checked=!!data.cloud.autoBackup;
+document.getElementById('autoBackupChk').onchange=e=>{ensureCloud();data.cloud.autoBackup=e.target.checked;localStorage.setItem(KEY,JSON.stringify(data))};
+renderCloudStatus(data.cloud.lastSync?('সর্বশেষ cloud backup: '+fmtDate(data.cloud.lastSync)):'Cloud backup এখনো সেটআপ করা হয়নি।');
 window.addEventListener('resize',()=>{if(document.getElementById('dashboard').classList.contains('active'))drawUsageChart()});
+</script>
+<script>
+if('serviceWorker' in navigator){
+window.addEventListener('load',()=>{
+navigator.serviceWorker.register('./service-worker.js').catch(e=>console.warn('SW register failed',e));
+});
+}
 </script>
 </body></html>
