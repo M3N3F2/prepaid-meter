@@ -1,0 +1,14 @@
+PREPAID METER LEDGER — INSTALLABLE WEB APP
+
+Important:
+A PWA needs to be opened from HTTPS (or localhost) for the browser to install it and run its service worker.
+Opening index.html directly with file:// is useful for testing, but it will NOT give the full install/offline-app behavior.
+
+Recommended Android setup:
+1. Put this folder on an HTTPS web host.
+2. Open the hosted index.html in Chrome.
+3. Chrome menu (⋮) -> Add to Home screen / Install app.
+4. Launch "Meter Ledger" from the home screen.
+5. Your entries are stored locally in the browser/app. Use the built-in JSON Backup regularly.
+
+The app itself is offline-capable after the first successful load.

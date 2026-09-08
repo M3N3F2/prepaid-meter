@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Prepaid Meter Ledger</title>
+<style>
+:root{--bg:#f5f7f8;--card:#fff;--text:#17212b;--muted:#66737f;--primary:#0f766e;--primary2:#115e59;--line:#e4e9ed;--danger:#b42318;--soft:#e7f5f2}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans Bengali",sans-serif}
+header{background:linear-gradient(135deg,#0f766e,#134e4a);color:white;padding:20px 16px 18px;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:22px}header p{margin:5px 0 0;opacity:.86;font-size:13px}
+main{max-width:850px;margin:auto;padding:14px}
+nav{display:flex;gap:7px;overflow:auto;margin-bottom:12px}nav button{white-space:nowrap;border:1px solid var(--line);background:var(--card);padding:10px 13px;border-radius:10px;color:var(--text);font-weight:600}nav button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.page{display:none}.page.active{display:block}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px #00000008}
+.metric .label{font-size:12px;color:var(--muted)}.metric .value{font-size:20px;font-weight:800;margin-top:4px}.metric small{color:var(--muted)}
+h2{font-size:17px;margin:3px 0 12px}h3{font-size:14px;margin:0 0 10px}
+label{display:block;font-size:12px;font-weight:700;color:#4c5965;margin:9px 0 5px}
+input,select,textarea{width:100%;border:1px solid #cfd7dd;border-radius:9px;padding:10px;font:inherit;background:#fff;color:var(--text)}
+textarea{min-height:70px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+button.primary,button.secondary,button.danger{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}
+button.primary{background:var(--primary);color:#fff}button.secondary{background:#edf2f4;color:#20303b}button.danger{background:#fff0ee;color:var(--danger)}
+.notice{background:var(--soft);border:1px solid #bce5dc;padding:10px;border-radius:10px;font-size:13px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-size:11px}
+.badge{display:inline-block;padding:3px 7px;border-radius:99px;font-size:11px;font-weight:800}.recharge{background:#e8f5ed;color:#17643c}.check{background:#eef3ff;color:#3156a5}.opening{background:#fff5dd;color:#8a5a00}
+.empty{text-align:center;color:var(--muted);padding:25px 10px}.right{text-align:right}.bar{height:10px;background:#edf0f2;border-radius:10px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--primary)}
+footer{color:var(--muted);font-size:11px;text-align:center;padding:15px}
+@media(max-width:650px){.grid{grid-template-columns:repeat(2,1fr)}.row{grid-template-columns:1fr}.metric .value{font-size:18px}table{font-size:12px}}
+</style>
+</head>
+<body>
+<header><h1>⚡ Prepaid Meter Ledger</h1><p>অফলাইন প্রিপেইড বিদ্যুৎ মিটারের হিসাব — Recharge, Balance, খরচ ও Daily Average</p></header>
+<main>
+<nav id="nav">
+<button data-page="dashboard" class="active">ড্যাশবোর্ড</button>
+<button data-page="add">এন্ট্রি</button>
+<button data-page="history">ইতিহাস</button>
+<button data-page="monthly">মাসিক রিপোর্ট</button>
+<button data-page="tariff">ট্যারিফ</button>
+<button data-page="backup">Backup</button>
+</nav>
+
+<section id="dashboard" class="page active">
+<div class="notice">সব হিসাব আপনার ফোনের browser-এই সংরক্ষণ হবে। Internet ছাড়াও কাজ করবে। প্রথমে একটি <b>Opening Balance</b> দিন, তারপর যখনই মিটার দেখবেন শুধু balance ও date/time লিখুন। Recharge আলাদা করে লিখলে মাঝের সময়ের আসল খরচ নিজে বের হবে।</div>
+<div class="grid">
+<div class="card metric"><div class="label">বর্তমান Balance</div><div class="value" id="dBalance">—</div><small id="dTier">সর্বশেষ check</small></div>
+<div class="card metric"><div class="label">Last Recharge</div><div class="value" id="dLastRecharge">—</div><small id="dLastRechargeDate">—</small></div>
+<div class="card metric"><div class="label">গড় খরচ / দিন</div><div class="value" id="dAvg">—</div><small>সর্বশেষ পর্যবেক্ষণ থেকে</small></div>
+<div class="card metric"><div class="label">এই মাসে খরচ</div><div class="value" id="dMonth">—</div><small id="dMonthCompare">মিটার balance ভিত্তিক</small></div>
+<div class="card metric"><div class="label">Estimated Remaining</div><div class="value" id="dDays">—</div><small>বর্তমান average অনুযায়ী</small></div>
+<div class="card metric"><div class="label">এই মাসের Recharge</div><div class="value" id="dMonthRecharge">—</div><small>current month</small></div>
+</div>
+<div class="card"><h2>সাম্প্রতিক হিসাব</h2><div id="dashText" class="empty">এখনও কোনো entry নেই।</div></div>
+<div class="card"><h2>⚡ Tariff Tier Analysis</h2><div id="tierAnalysis" class="empty">কমপক্ষে দুইটি Balance Check দিলে এখানে Tier change ও আনুমানিক energy-rate impact দেখা যাবে।</div></div>
+<div class="card"><h2>📈 Consumption Trend</h2>
+<div id="usageSummary" class="notice">দুইটি বা তার বেশি Balance Check দিলে consumption trend তৈরি হবে।</div>
+<canvas id="usageChart" height="190" style="width:100%;display:block"></canvas>
+</div>
+<div class="card"><h2>📅 Monthly Comparison</h2><div id="monthComparison" class="empty">একাধিক মাসের হিসাব হলে এখানে তুলনা দেখা যাবে।</div></div>
+<div class="card"><h2>দ্রুত কাজ</h2><div class="actions">
+<button class="primary" onclick="showPage('add');setType('check')">🔎 Balance Check</button>
+<button class="secondary" onclick="showPage('add');setType('recharge')">💳 Recharge</button>
+</div></div>
+</section>
+
+<section id="add" class="page">
+<div class="card">
+<h2 id="formTitle">Balance Check</h2>
+<div class="row">
+<div><label>Entry type</label><select id="type" onchange="setType(this.value)"><option value="check">Balance Check</option><option value="recharge">Recharge</option><option value="opening">Opening Balance</option><option value="monthend">Month-End Closing Balance</option></select></div>
+<div><label>Date & time</label><input id="dt" type="datetime-local"></div>
+</div>
+<div id="checkFields">
+<label>মিটারে দেখা বর্তমান Balance (৳)</label><input id="balance" type="number" step="0.01" placeholder="যেমন 1640.50">
+<label>মিটারে বর্তমানে কোন Tariff Tier দেখাচ্ছে?</label>
+<select id="tier">
+<option value="">— Select Tier —</option>
+<option value="Lifeline">Lifeline</option>
+<option value="1st">১ম ধাপ</option>
+<option value="2nd">২য় ধাপ</option>
+<option value="3rd">৩য় ধাপ</option>
+<option value="4th">৪র্থ ধাপ</option>
+<option value="5th">৫ম ধাপ</option>
+<option value="6th">৬ষ্ঠ ধাপ</option>
+</select>
+<div class="row"><div><label>Energy cost / usage (ঐচ্ছিক)</label><input id="energyCost" type="number" step="0.01" placeholder="যেমন 2226.60"></div><div><label>Meter units kWh (ঐচ্ছিক)</label><input id="units" type="number" step="0.01" placeholder="যেমন 245.5"></div></div>
+</div>
+<div id="rechargeFields" style="display:none"><label>Recharge amount (৳)</label><input id="recharge" type="number" step="0.01" placeholder="যেমন 2500"></div>
+<label>Note (ঐচ্ছিক)</label><textarea id="note" placeholder="যেমন: 7 Aug recharge, meter balance 2400+"></textarea>
+<div class="actions"><button class="primary" onclick="saveEntry()">Save Entry</button><button class="secondary" onclick="clearForm()">Clear</button></div>
+</div>
+<div class="card"><h3>Month-End কীভাবে ব্যবহার করবেন</h3><p style="font-size:13px;line-height:1.6;margin:0">মাসের শেষ দিনে <b>Month-End Closing Balance</b> select করে meter-এর final balance দিন। App ওই balance পর্যন্ত মাসের মোট cost হিসাব করবে। এরপর সেই closing balance-ই পরের মাসের <b>Opening / Carry Forward</b> হিসেবে automatically ব্যবহার করবে। মাঝখানে recharge থাকলেও হিসাবের মধ্যে যোগ হবে।</p></div>
+<div class="card"><h3>আপনার উদাহরণ কীভাবে লিখবেন</h3>
+<p style="font-size:13px;line-height:1.6;margin:0">যেমন 31 July-তে Opening Balance = ৳200+। 7 Aug-এ Recharge = ৳2,500 এবং একই সময় Balance Check = ৳2,400+। তখন মিটারে যে Tariff Tier দেখাবে সেটিও select করবে। আজ Balance = ৳1,600+ এবং আজকের Tier-ও select করবে। অ্যাপ দুই Balance Check-এর মাঝে যত Recharge হয়েছে তা যোগ করে আসল cash consumption ও daily average বের করবে এবং কোন সময়ে কোন Tier ছিল সেটিও history-তে রাখবে।</p>
+</div>
+</section>
+
+<section id="history" class="page">
+<div class="card"><h2>সব Entry</h2><div id="historyTable"></div></div>
+</section>
+
+<section id="monthly" class="page">
+<div class="card"><h2>মাসিক রিপোর্ট</h2><label>মাস নির্বাচন</label><input id="monthPick" type="month" onchange="renderAll()"></div>
+<div class="grid">
+<div class="card metric"><div class="label">Opening Balance</div><div class="value" id="mOpen">—</div></div>
+<div class="card metric"><div class="label">Total Recharge</div><div class="value" id="mRecharge">—</div></div>
+<div class="card metric"><div class="label">Cash Consumption</div><div class="value" id="mCost">—</div></div>
+<div class="card metric"><div class="label">Average / Day</div><div class="value" id="mAvg">—</div></div>
+</div>
+<div class="card"><h3>এই মাসের হিসাব</h3><div id="monthlyDetail"></div></div>
+</section>
+
+<section id="tariff" class="page">
+<div class="card"><h2>আবাসিক LT-A — আপনার দেওয়া ২০২৬ Rate</h2>
+<div class="notice">ছবির BERC rate অনুযায়ী energy rate রাখা হয়েছে। Actual prepaid deduction-এর মধ্যে demand charge, VAT/অন্যান্য adjustment থাকতে পারে—তাই meter-এর আসল balance history-কে primary হিসাব হিসেবে ধরা হয়েছে।</div>
+<table><tr><th>ধাপ</th><th>Unit</th><th>৳/kWh</th></tr>
+<tr><td>Lifeline</td><td>0–50</td><td>5.32</td></tr><tr><td>প্রথম ধাপ</td><td>0–75</td><td>6.18</td></tr>
+<tr><td>দ্বিতীয়</td><td>76–200</td><td>8.50</td></tr><tr><td>তৃতীয়</td><td>201–300</td><td>9.10</td></tr>
+<tr><td>চতুর্থ</td><td>301–400</td><td>9.62</td></tr><tr><td>পঞ্চম</td><td>401–600</td><td>15.01</td></tr>
+<tr><td>ষষ্ঠ</td><td>600+</td><td>17.55</td></tr></table>
+<p style="font-size:12px;color:var(--muted)">নোট: আপনার ছবিতে demand charge ৳42.00/kW/month দেখা যাচ্ছে। App-এর actual balance calculation-এ এটি আলাদা করে ধরে নেওয়া হয়নি, কারণ prepaid meter-এ আপনার বাস্তব deduction-ই সবচেয়ে নির্ভরযোগ্য।</p>
+</div>
+<div class="card"><h2>Quick Energy Cost Estimate</h2><label>এই মাসে মোট unit (kWh)</label><input id="calcUnits" type="number" step="0.01" placeholder="যেমন 250" oninput="calcTariff()"><div id="tariffResult" class="notice" style="margin-top:10px">Unit লিখলে আনুমানিক energy charge দেখাবে।</div></div>
+</section>
+
+<section id="backup" class="page">
+<div class="card"><h2>Backup / Restore</h2><p style="font-size:13px;color:var(--muted)">ফোন change/reset করার আগে JSON backup নিন। Restore করলে বর্তমান data-এর সাথে নতুন data যোগ হবে না—পুরোনো data replace হবে।</p>
+<div class="actions"><button class="primary" onclick="downloadBackup()">⬇ Backup JSON</button><button class="secondary" onclick="document.getElementById('file').click()">⬆ Restore JSON</button><input id="file" type="file" accept=".json" hidden onchange="restoreBackup(event)"></div>
+<hr style="border:0;border-top:1px solid var(--line);margin:15px 0">
+<button class="danger" onclick="resetAll()">সব data মুছে ফেলুন</button>
+</div>
+</section>
+<footer>Prepaid Meter Ledger • Data stays on this device/browser</footer>
+</main>
+
+<script>
+const KEY='prepaid_meter_ledger_v1';
+let data=JSON.parse(localStorage.getItem(KEY)||'{"entries":[]}');
+const money=n=>'৳'+Number(n||0).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
+const nowLocal=()=>{let d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)};
+document.getElementById('dt').value=nowLocal();
+document.getElementById('monthPick').value=new Date().toISOString().slice(0,7);
+
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));renderAll()}
+function setType(t){document.getElementById('type').value=t;document.getElementById('checkFields').style.display=t==='recharge'?'none':'block';document.getElementById('rechargeFields').style.display=t==='recharge'?'block':'none';document.getElementById('formTitle').textContent=t==='recharge'?'Recharge':t==='opening'?'Opening Balance':'Balance Check'}
+function clearForm(){document.getElementById('dt').value=nowLocal();document.getElementById('balance').value='';document.getElementById('tier').value='';document.getElementById('recharge').value='';document.getElementById('energyCost').value='';document.getElementById('units').value='';document.getElementById('note').value=''}
+function saveEntry(){
+ let t=document.getElementById('type').value, dt=document.getElementById('dt').value;
+ if(!dt)return alert('Date & time দিন।');
+ let e={id:Date.now(),type:t,dt,note:document.getElementById('note').value.trim()};
+ if(t==='recharge'){e.amount=+document.getElementById('recharge').value;if(!(e.amount>0))return alert('Recharge amount দিন।')}
+ else{e.balance=+document.getElementById('balance').value;if(isNaN(e.balance)||e.balance<0)return alert('সঠিক balance দিন।');e.tier=document.getElementById('tier').value||null;e.energyCost=+document.getElementById('energyCost').value||null;e.units=+document.getElementById('units').value||null}
+ data.entries.push(e);data.entries.sort((a,b)=>new Date(a.dt)-new Date(b.dt));persist();clearForm();alert('Entry saved ✓');showPage('dashboard')
+}
+function persist(){localStorage.setItem(KEY,JSON.stringify(data));renderAll()}
+function sorted(){return [...data.entries].sort((a,b)=>new Date(a.dt)-new Date(b.dt))}
+function balanceChecks(){return sorted().filter(e=>e.type!=='recharge')}
+function latestBalance(){let a=balanceChecks();return a.length?a[a.length-1].balance:null}
+function fmtDate(s){return new Date(s).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+function consumptionBetween(prev,current){
+ let es=sorted(), pi=es.findIndex(x=>x.id===prev.id), ci=es.findIndex(x=>x.id===current.id);
+ let recharge=es.slice(pi+1,ci+1).filter(x=>x.type==='recharge').reduce((s,x)=>s+x.amount,0);
+ return {recharge,consumption:prev.balance+recharge-current.balance};
+}
+function overallStats(){
+ let checks=balanceChecks(); if(checks.length<2)return null;
+ let first=checks[0], last=checks[checks.length-1], c=consumptionBetween(first,last);
+ let days=(new Date(last.dt)-new Date(first.dt))/86400000;
+ return {balance:last.balance,recharge:c.recharge,consumption:c.consumption,days,avg:days>0?c.consumption/days:null,first,last}
+}
+function getLastRecharge(){
+ let rs=sorted().filter(e=>e.type==='recharge');
+ return rs.length?rs[rs.length-1]:null;
+}
+function monthCostFor(m){let x=monthStats(m);return x.cost==null?null:x.cost}
+function monthLabel(m){return new Date(m+'-01T00:00').toLocaleDateString('en-US',{month:'short',year:'numeric'})}
+function getMonthlyCosts(){
+ let months=[...new Set(sorted().map(e=>e.dt.slice(0,7)))].sort();
+ return months.map(m=>({m,cost:monthCostFor(m)})).filter(x=>x.cost!=null);
+}
+function renderDashboard(){
+ let s=overallStats(), b=latestBalance();
+ document.getElementById('dBalance').textContent=b==null?'—':money(b);
+ let bc=balanceChecks(), lb=bc.length?bc[bc.length-1]:null;
+ document.getElementById('dTier').textContent=lb&&lb.tier?((lb.type==='monthend'?'Month-end · ':'')+'Tier: '+lb.tier):(lb&&lb.type==='monthend'?'Month-end closing':'সর্বশেষ check');
+ let totalR=data.entries.filter(e=>e.type==='recharge').reduce((s,e)=>s+e.amount,0);document.getElementById('dRecharge').textContent=money(totalR);
+ document.getElementById('dAvg').textContent=s&&s.avg!=null?money(s.avg):'—';
+ let month=new Date().toISOString().slice(0,7), mr=monthStats(month);document.getElementById('dMonth').textContent=mr?money(mr.cost):'—';
+ let recent=sorted().slice(-5).reverse();document.getElementById('dashText').innerHTML=recent.length?recent.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><span class="badge ${e.type}">${e.type==='recharge'?'RECHARGE':e.type==='opening'?'OPENING':'BALANCE'}</span> <b>${fmtDate(e.dt)}</b> — ${e.type==='recharge'?money(e.amount):money(e.balance)} ${e.note?'· '+esc(e.note):''}</div>`).join(''):'এখনও কোনো entry নেই।';
+
+ let lr=getLastRecharge();
+ document.getElementById('dLastRecharge').textContent=lr?money(lr.amount):'—';
+ document.getElementById('dLastRechargeDate').textContent=lr?fmtDate(lr.dt):'কোনো recharge নেই';
+ let days=s&&s.avg>0&&b!=null?b/s.avg:null;
+ document.getElementById('dDays').textContent=days==null?'—':(days<1?'<1 day':Math.round(days)+' দিন');
+ let currentMonth=new Date().toISOString().slice(0,7), cm=monthStats(currentMonth);
+ document.getElementById('dMonthRecharge').textContent=money(cm.recharge);
+ let monthly=getMonthlyCosts();
+ if(monthly.length>=2){
+   let a=monthly[monthly.length-2].cost, z=monthly[monthly.length-1].cost;
+   let pct=a?((z-a)/a*100):null;
+   document.getElementById('dMonthCompare').textContent=pct==null?'আগের মাসের data নেই':(pct>0?Math.abs(pct).toFixed(1)+'% বেশি':pct<0?Math.abs(pct).toFixed(1)+'% কম':'আগের মাসের মতো');
+ } else document.getElementById('dMonthCompare').textContent='আগের মাসের data নেই';
+
+}
+function monthStats(month){
+ let es=sorted(), start=new Date(month+'-01T00:00'), end=new Date(start);end.setMonth(end.getMonth()+1);
+ let inMonth=es.filter(e=>new Date(e.dt)>=start&&new Date(e.dt)<end);
+ let checks=balanceChecks();
+ let monthEnd=inMonth.filter(e=>e.type==='monthend').pop();
+ let priorMonthEnd=es.filter(e=>e.type==='monthend'&&new Date(e.dt)<start).pop();
+ let priorCheck=checks.filter(e=>new Date(e.dt)<start).pop();
+ let first=inMonth.filter(e=>e.type!=='recharge')[0];
+ let last=monthEnd || inMonth.filter(e=>e.type!=='recharge').pop();
+ let opening=priorMonthEnd?priorMonthEnd.balance:(priorCheck?priorCheck.balance:(first?first.balance:null));
+ let recharge=inMonth.filter(e=>e.type==='recharge').reduce((s,e)=>s+e.amount,0);
+ let cost=null,days=null,avg=null;
+ if(opening!=null&&last){
+   cost=opening+recharge-last.balance;
+   let baseDate=priorMonthEnd?new Date(priorMonthEnd.dt):(priorCheck?new Date(priorCheck.dt):(first?new Date(first.dt):start));
+   days=Math.max((new Date(last.dt)-baseDate)/86400000,0);
+   avg=days?cost/days:null;
+ }
+ return {inMonth,opening,recharge,last,monthEnd,priorMonthEnd,cost,days,avg,prior:priorMonthEnd||priorCheck};
+}
+function renderMonthly(){
+ let m=document.getElementById('monthPick').value||new Date().toISOString().slice(0,7),x=monthStats(m);
+ document.getElementById('mOpen').textContent=x.opening==null?'—':money(x.opening);
+ document.getElementById('mRecharge').textContent=money(x.recharge);
+ document.getElementById('mCost').textContent=x.cost==null?'—':money(x.cost);
+ document.getElementById('mAvg').textContent=x.avg==null?'—':money(x.avg);
+ let checks=x.inMonth.filter(e=>e.type!=='recharge'), html='';
+ let summary='';
+ if(x.monthEnd){
+   summary=`<div class="notice"><b>Month-End Closing:</b> ${money(x.monthEnd.balance)} — এই balance পরের মাসের <b>Opening / Carry Forward</b> হিসেবে auto ধরা হবে।</div>`;
+ } else {
+   summary=`<div class="notice">এই মাসের জন্য Month-End Closing entry দিলে মাসের final cost lock হবে এবং closing balance পরের মাসে auto carry forward হবে।</div>`;
+ }
+ if(!checks.length)html='<div class="empty">এই মাসে balance check নেই।</div>';
+ else html='<table><tr><th>Date</th><th>Type</th><th>Tier</th><th>Balance</th><th>Recharge since previous check</th><th>Consumption</th></tr>';
+ checks.forEach((e,i)=>{
+   let prev=balanceChecks().filter(p=>new Date(p.dt)<new Date(e.dt)).pop();
+   let c=prev?consumptionBetween(prev,e):null;
+   let label=e.type==='monthend'?'MONTH-END':'BALANCE';
+   html+=`<tr><td>${fmtDate(e.dt)}</td><td>${label}</td><td>${e.tier?esc(e.tier):'—'}</td><td>${money(e.balance)}</td><td>${c?money(c.recharge):'—'}</td><td>${c?money(c.consumption):'—'}</td></tr>`;
+ });
+ if(checks.length)html+='</table>';
+ document.getElementById('monthlyDetail').innerHTML=summary+html;
+}
+function renderHistory(){
+ let es=sorted().reverse(), el=document.getElementById('historyTable');if(!es.length){el.innerHTML='<div class="empty">কোনো entry নেই।</div>';return}
+ el.innerHTML='<table><tr><th>Date</th><th>Type</th><th>Amount/Balance</th><th>Note</th><th></th></tr>'+es.map(e=>`<tr><td>${fmtDate(e.dt)}</td><td><span class="badge ${e.type}">${e.type==='recharge'?'RECHARGE':e.type==='opening'?'OPENING':'BALANCE'}</span></td><td>${e.type==='recharge'?money(e.amount):money(e.balance)}${e.tier?'<br><small>Tier: <b>'+esc(e.tier)+'</b></small>':''}${e.energyCost?'<br><small>Energy: '+money(e.energyCost)+'</small>':''}${e.units?'<br><small>kWh: '+e.units+'</small>':''}</td><td>${esc(e.note||'')}</td><td><button class="danger" onclick="delEntry(${e.id})">Delete</button></td></tr>`).join('')+'</table>';
+}
+function delEntry(id){if(confirm('এই entry মুছবেন?')){data.entries=data.entries.filter(e=>e.id!==id);persist()}}
+function renderTierAnalysis(){
+ let checks=balanceChecks();
+ const rates={'Lifeline':5.32,'1st':6.18,'2nd':8.50,'3rd':9.10,'4th':9.62,'5th':15.01,'6th':17.55};
+ if(checks.length<2){document.getElementById('tierAnalysis').innerHTML='কমপক্ষে দুইটি Balance Check দিলে এখানে Tier change ও আনুমানিক energy-rate impact দেখা যাবে।';return}
+ let withTier=checks.filter(e=>e.tier);
+ if(withTier.length<2){document.getElementById('tierAnalysis').innerHTML='Balance Check-এর সময় অন্তত দুইবার Tariff Tier select করুন, তাহলে comparison দেখা যাবে।';return}
+ let last=withTier[withTier.length-1], prev=withTier[withTier.length-2];
+ let lr=rates[last.tier], pr=rates[prev.tier];
+ let change=(lr!=null&&pr!=null)?lr-pr:null;
+ let pct=(change!=null&&pr)?(change/pr)*100:null;
+ let direction=change==null?'':change>0?'বেশি':change<0?'কম':'একই';
+ let intervals=[];
+ for(let i=1;i<withTier.length;i++){
+   let a=withTier[i-1],b=withTier[i];
+   let days=Math.max((new Date(b.dt)-new Date(a.dt))/86400000,0);
+   if(days>0) intervals.push({from:a,to:b,days});
+ }
+ let rows=intervals.slice(-5).reverse().map(x=>{
+   let a=x.from.tier,b=x.to.tier,ra=rates[a],rb=rates[b];
+   let diff=(ra!=null&&rb!=null)?rb-ra:null;
+   let txt=diff==null?'—':(diff>0?'↑ ':diff<0?'↓ ':'= ')+Math.abs(diff).toFixed(2)+' ৳/kWh';
+   return `<tr><td>${fmtDate(x.from.dt)} → ${fmtDate(x.to.dt)}</td><td>${esc(a)}</td><td>${esc(b)}</td><td>${x.days.toFixed(1)} দিন</td><td>${txt}</td></tr>`;
+ }).join('');
+ let estimate='';
+ if(lr!=null){
+   estimate=`<p style="margin:8px 0 0;font-size:13px">বর্তমান Tier <b>${esc(last.tier)}</b> → energy rate প্রায় <b>৳${lr.toFixed(2)}/kWh</b>।`;
+   if(change!=null) estimate+=` আগের recorded Tier-এর তুলনায় rate <b>${direction}</b> হয়েছে প্রায় <b>৳${Math.abs(change).toFixed(2)}/kWh</b>${pct!=null?' ('+Math.abs(pct).toFixed(1)+'%)':''}.`;
+   estimate+='</p>';
+ }
+ document.getElementById('tierAnalysis').innerHTML=estimate+
+   `<div style="overflow:auto;margin-top:10px"><table><tr><th>Period</th><th>From</th><th>To</th><th>Days</th><th>Rate impact</th></tr>${rows}</table></div>
+   <small style="display:block;color:var(--muted);margin-top:9px">এটি শুধু energy-rate comparison। VAT, demand charge ও অন্যান্য prepaid deduction এতে ধরা হয়নি।</small>`;
+}
+function drawUsageChart(){
+ const canvas=document.getElementById('usageChart'), box=canvas&&canvas.parentElement;
+ const checks=balanceChecks();
+ if(!canvas||checks.length<2){if(canvas)canvas.style.display='none';return}
+ canvas.style.display='block';
+ const ctx=canvas.getContext('2d'),w=Math.max(300,box.clientWidth-28),h=190,dpr=window.devicePixelRatio||1;
+ canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.height=h+'px';ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+ const pts=[];
+ for(let i=1;i<checks.length;i++){
+   const a=checks[i-1],b=checks[i],days=(new Date(b.dt)-new Date(a.dt))/86400000;
+   if(days<=0)continue;
+   const c=consumptionBetween(a,b).consumption;
+   if(c>=0)pts.push({date:b.dt,val:c/days});
+ }
+ if(!pts.length){document.getElementById('usageSummary').textContent='Consumption estimate তৈরি করা যাচ্ছে না।';return}
+ const vals=pts.map(p=>p.val),max=Math.max(...vals),min=Math.min(...vals),avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+ const pad={l:45,r:10,t:20,b:38},cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
+ const x=i=>pad.l+(pts.length===1?cw/2:i*cw/(pts.length-1));
+ const y=v=>pad.t+ch-(max===min?ch/2:(v-min)/(max-min))*ch;
+ ctx.font='11px system-ui';ctx.textAlign='right';ctx.textBaseline='middle';
+ for(let i=0;i<4;i++){let yy=pad.t+ch*i/3,val=max-(max-min)*i/3;ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.strokeStyle='#e4e9ed';ctx.stroke();ctx.fillStyle='#66737f';ctx.fillText('৳'+val.toFixed(0),pad.l-6,yy)}
+ ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.val)):ctx.moveTo(x(i),y(p.val)));ctx.strokeStyle='#2d8acb';ctx.lineWidth=2.5;ctx.stroke();
+ pts.forEach((p,i)=>{ctx.beginPath();ctx.arc(x(i),y(p.val),4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#2d8acb';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#17212b';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(p.val.toFixed(2),x(i),y(p.val)-7)});
+ ctx.fillStyle='#66737f';ctx.textBaseline='top';
+ const step=Math.max(1,Math.ceil(pts.length/6));
+ pts.forEach((p,i)=>{if(i%step===0||i===pts.length-1)ctx.fillText(new Date(p.date).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}),x(i),h-pad.b+10)});
+ document.getElementById('usageSummary').innerHTML=`Estimated average: <b>${money(avg)}/day</b> · Lowest: <b>${money(min)}/day</b> · Highest: <b>${money(max)}/day</b><br><small>দুই Balance Check-এর মধ্যকার consumption দিন দিয়ে ভাগ করে estimate করা হয়েছে।</small>`;
+}
+function renderMonthComparison(){
+ const box=document.getElementById('monthComparison'),rows=getMonthlyCosts();
+ if(rows.length<2){box.innerHTML='একাধিক মাসের Month-End/Balance data হলে এখানে তুলনা দেখা যাবে।';return}
+ let h='<table><tr><th>Month</th><th>Cost</th><th>vs Previous</th></tr>';
+ rows.forEach((r,i)=>{let c='—';if(i){let p=rows[i-1].cost,pct=p?((r.cost-p)/p*100):null;c=pct==null?'—':(pct>0?'↑ '+pct.toFixed(1)+'%':pct<0?'↓ '+Math.abs(pct).toFixed(1)+'%':'= 0%')}h+=`<tr><td>${monthLabel(r.m)}</td><td>${money(r.cost)}</td><td>${c}</td></tr>`});
+ box.innerHTML=h+'</table>';
+}
+function renderAll(){renderDashboard();renderHistory();renderMonthly();renderTierAnalysis();drawUsageChart();renderMonthComparison()}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function calcTariff(){
+ let u=+document.getElementById('calcUnits').value||0,r=0;
+ // progressive rates; lifeline is a separate subsidized condition, so estimate uses normal residential slabs.
+ let slabs=[[75,6.18],[200,8.50],[300,9.10],[400,9.62],[600,15.01],[Infinity,17.55]],prev=0;
+ for(let [limit,rate] of slabs){let take=Math.max(0,Math.min(u,limit)-prev);r+=take*rate;prev=limit;if(u<=limit)break}
+ document.getElementById('tariffResult').innerHTML=u?`Energy charge ≈ <b>${money(r)}</b> (শুধু slab energy rate; VAT/demand/other prepaid deductions ধরা হয়নি)।`:'Unit লিখলে আনুমানিক energy charge দেখাবে।'
+}
+function downloadBackup(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='prepaid-meter-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
+function restoreBackup(ev){let f=ev.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.entries||!Array.isArray(x.entries))throw Error();if(confirm('বর্তমান data replace করে backup restore করবেন?')){data=x;persist();alert('Restore complete ✓')}}catch(e){alert('Invalid backup file')}};r.readAsText(f)}
+function resetAll(){if(confirm('সব data স্থায়ীভাবে মুছে ফেলবেন?')){localStorage.removeItem(KEY);data={entries:[]};renderAll()}}
+renderAll();
+window.addEventListener('resize',()=>{if(document.getElementById('dashboard').classList.contains('active'))drawUsageChart()});
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
+}
+</script>
+</body></html>
