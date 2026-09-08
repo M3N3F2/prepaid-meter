@@ -3,13 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-
-
 <meta name="theme-color" content="#0f766e">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="manifest" href="manifest.webmanifest">
 <title>Prepaid Meter Ledger</title>
 <style>
 :root{--bg:#f5f7f8;--card:#fff;--text:#17212b;--muted:#66737f;--primary:#0f766e;--primary2:#115e59;--line:#e4e9ed;--danger:#b42318;--soft:#e7f5f2}
@@ -150,7 +144,7 @@ document.getElementById('monthPick').value=new Date().toISOString().slice(0,7);
 
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
 function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));renderAll()}
-function setType(t){document.getElementById('type').value=t;document.getElementById('checkFields').style.display=t==='recharge'?'none':'block';document.getElementById('rechargeFields').style.display=t==='recharge'?'block':'none';document.getElementById('formTitle').textContent=t==='recharge'?'Recharge':t==='opening'?'Opening Balance':'Balance Check'}
+function setType(t){document.getElementById('type').value=t;document.getElementById('checkFields').style.display=t==='recharge'?'none':'block';document.getElementById('rechargeFields').style.display=t==='recharge'?'block':'none';document.getElementById('formTitle').textContent=t==='recharge'?'Recharge':t==='opening'?'Opening Balance':t==='monthend'?'Month-End Closing Balance':'Balance Check'}
 function clearForm(){document.getElementById('dt').value=nowLocal();document.getElementById('balance').value='';document.getElementById('tier').value='';document.getElementById('recharge').value='';document.getElementById('energyCost').value='';document.getElementById('units').value='';document.getElementById('note').value=''}
 function saveEntry(){
  let t=document.getElementById('type').value, dt=document.getElementById('dt').value;
@@ -191,7 +185,7 @@ function renderDashboard(){
  document.getElementById('dBalance').textContent=b==null?'—':money(b);
  let bc=balanceChecks(), lb=bc.length?bc[bc.length-1]:null;
  document.getElementById('dTier').textContent=lb&&lb.tier?((lb.type==='monthend'?'Month-end · ':'')+'Tier: '+lb.tier):(lb&&lb.type==='monthend'?'Month-end closing':'সর্বশেষ check');
- let totalR=data.entries.filter(e=>e.type==='recharge').reduce((s,e)=>s+e.amount,0);document.getElementById('dRecharge').textContent=money(totalR);
+ let totalR=data.entries.filter(e=>e.type==='recharge').reduce((s,e)=>s+e.amount,0);
  document.getElementById('dAvg').textContent=s&&s.avg!=null?money(s.avg):'—';
  let month=new Date().toISOString().slice(0,7), mr=monthStats(month);document.getElementById('dMonth').textContent=mr?money(mr.cost):'—';
  let recent=sorted().slice(-5).reverse();document.getElementById('dashText').innerHTML=recent.length?recent.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><span class="badge ${e.type}">${e.type==='recharge'?'RECHARGE':e.type==='opening'?'OPENING':'BALANCE'}</span> <b>${fmtDate(e.dt)}</b> — ${e.type==='recharge'?money(e.amount):money(e.balance)} ${e.note?'· '+esc(e.note):''}</div>`).join(''):'এখনও কোনো entry নেই।';
@@ -338,15 +332,27 @@ function calcTariff(){
  document.getElementById('tariffResult').innerHTML=u?`Energy charge ≈ <b>${money(r)}</b> (শুধু slab energy rate; VAT/demand/other prepaid deductions ধরা হয়নি)।`:'Unit লিখলে আনুমানিক energy charge দেখাবে।'
 }
 function downloadBackup(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='prepaid-meter-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
-function restoreBackup(ev){let f=ev.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.entries||!Array.isArray(x.entries))throw Error();if(confirm('বর্তমান data replace করে backup restore করবেন?')){data=x;persist();alert('Restore complete ✓')}}catch(e){alert('Invalid backup file')}};r.readAsText(f)}
+function restoreBackup(ev){
+ let f=ev.target.files[0]; if(!f)return;
+ let r=new FileReader();
+ r.onload=()=>{
+  try{
+   let x=JSON.parse(r.result), entries=null;
+   if(Array.isArray(x)) entries=x;
+   else if(x && Array.isArray(x.entries)) entries=x.entries;
+   else if(x && x.data && Array.isArray(x.data.entries)) entries=x.data.entries;
+   else if(x && x.ledger && Array.isArray(x.ledger.entries)) entries=x.ledger.entries;
+   if(!entries) throw Error('format');
+   let imported={...data, entries};
+   if(confirm('বর্তমান data replace করে backup restore করবেন?')){data=imported;persist();alert('Restore complete ✓
+'+entries.length+'টি entry restored');}
+  }catch(e){alert('Invalid backup file. শুধু এই app-এর Backup JSON file select করুন—ZIP, HTML বা অন্য spreadsheet নয়।')}
+  ev.target.value='';
+ };
+ r.readAsText(f);
+}
 function resetAll(){if(confirm('সব data স্থায়ীভাবে মুছে ফেলবেন?')){localStorage.removeItem(KEY);data={entries:[]};renderAll()}}
 renderAll();
 window.addEventListener('resize',()=>{if(document.getElementById('dashboard').classList.contains('active'))drawUsageChart()});
-</script>
-
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
-}
 </script>
 </body></html>
