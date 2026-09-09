@@ -3,74 +3,206 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0f766e">
+<meta name="theme-color" content="#0d6b62">
 <meta name="description" content="Offline prepaid electricity meter ledger — track recharges, balance checks, and daily/monthly consumption.">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <title>Prepaid Meter Ledger</title>
 <style>
-:root{--bg:#f5f7f8;--card:#fff;--text:#17212b;--muted:#66737f;--primary:#0f766e;--primary2:#115e59;--line:#e4e9ed;--danger:#b42318;--soft:#e7f5f2}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans Bengali",sans-serif}
-header{background:linear-gradient(135deg,#0f766e,#134e4a);color:white;padding:20px 16px 18px;position:sticky;top:0;z-index:5}
-header h1{margin:0;font-size:22px}header p{margin:5px 0 0;opacity:.86;font-size:13px}
-main{max-width:850px;margin:auto;padding:14px}
-nav{display:flex;gap:7px;overflow:auto;margin-bottom:12px}nav button{white-space:nowrap;border:1px solid var(--line);background:var(--card);padding:10px 13px;border-radius:10px;color:var(--text);font-weight:600}nav button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-.page{display:none}.page.active{display:block}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px #00000008}
-.metric .label{font-size:12px;color:var(--muted)}.metric .value{font-size:20px;font-weight:800;margin-top:4px}.metric small{color:var(--muted)}
-h2{font-size:17px;margin:3px 0 12px}h3{font-size:14px;margin:0 0 10px}
-label{display:block;font-size:12px;font-weight:700;color:#4c5965;margin:9px 0 5px}
-input,select,textarea{width:100%;border:1px solid #cfd7dd;border-radius:9px;padding:10px;font:inherit;background:#fff;color:var(--text)}
-textarea{min-height:70px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-button.primary,button.secondary,button.danger{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}
-button.primary{background:var(--primary);color:#fff}button.secondary{background:#edf2f4;color:#20303b}button.danger{background:#fff0ee;color:var(--danger)}
-.notice{background:var(--soft);border:1px solid #bce5dc;padding:10px;border-radius:10px;font-size:13px;margin-bottom:12px}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-size:11px}
-.badge{display:inline-block;padding:3px 7px;border-radius:99px;font-size:11px;font-weight:800}.recharge{background:#e8f5ed;color:#17643c}.check{background:#eef3ff;color:#3156a5}.opening{background:#fff5dd;color:#8a5a00}
-#rsheetTable table th.thPrev{background:#f5a623;color:#3a2400}#rsheetTable table th.thTotal{background:#38c976;color:#06331a}#rsheetTable table th.thSqu{background:#4fc3e8;color:#00303f}
-.empty{text-align:center;color:var(--muted);padding:25px 10px}.right{text-align:right}.bar{height:10px;background:#edf0f2;border-radius:10px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--primary)}
-footer{color:var(--muted);font-size:11px;text-align:center;padding:15px}
-@media(max-width:650px){.grid{grid-template-columns:repeat(2,1fr)}.row{grid-template-columns:1fr}.metric .value{font-size:18px}table{font-size:12px}}
+:root{
+  --bg:#f4f6f5;
+  --card:#ffffff;
+  --text:#132420;
+  --muted:#6b7a76;
+  --faint:#9aa6a2;
+  --primary:#0d6b62;
+  --primary-dark:#0a4f49;
+  --primary-soft:#e4f2ef;
+  --amber:#c9821a;
+  --amber-soft:#fbf0dd;
+  --line:#e6ebe9;
+  --danger:#b3261e;
+  --danger-soft:#fbeae9;
+  --radius:16px;
+  --radius-sm:11px;
+  --shadow:0 1px 2px rgba(15,30,26,.04), 0 6px 20px rgba(15,30,26,.05);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,"Noto Sans Bengali",sans-serif;line-height:1.45}
+
+/* ===== Header ===== */
+header{
+  background:linear-gradient(150deg,var(--primary),var(--primary-dark));
+  color:#fff;padding:16px 18px 14px;position:sticky;top:0;z-index:10;
+  box-shadow:0 2px 14px rgba(10,60,54,.18);
+}
+.headrow{display:flex;align-items:center;gap:10px}
+.headrow .mark{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.headrow h1{margin:0;font-size:17px;font-weight:800;letter-spacing:.1px}
+.headrow p{margin:1px 0 0;opacity:.82;font-size:11.5px}
+
+/* ===== Nav (fixed bottom button bar) ===== */
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  background:#fff;border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(4,1fr);
+  padding:6px 2px calc(6px + env(safe-area-inset-bottom));
+  box-shadow:0 -3px 16px rgba(15,30,26,.07);
+}
+nav button{
+  border:0;background:none;color:var(--muted);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  padding:7px 2px;border-radius:11px;font-weight:700;font-size:9.8px;line-height:1.1;
+}
+nav button .navicon{font-size:19px;line-height:1}
+nav button:active{background:var(--primary-soft);color:var(--primary-dark)}
+
+main{max-width:760px;margin:auto;padding:14px 12px 128px}
+
+/* ===== Collapsible menu sections ===== */
+details.menu{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;box-shadow:var(--shadow);overflow:hidden}
+details.menu>summary{list-style:none;cursor:pointer;padding:16px;display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;color:var(--text);user-select:none}
+details.menu>summary::-webkit-details-marker{display:none}
+details.menu>summary .ico{font-size:17px;flex-shrink:0}
+details.menu>summary .chev{margin-left:auto;color:var(--faint);font-size:13px;transition:transform .18s;flex-shrink:0}
+details.menu[open]>summary .chev{transform:rotate(180deg)}
+details.menu[open]>summary{border-bottom:1px solid var(--line)}
+details.menu>.menubody{padding:14px 16px 16px}
+details.menu>.menubody>.card:first-child{margin-top:0}
+details.menu>.menubody>.card:last-child{margin-bottom:0}
+details.menu .card{background:#fafcfb;box-shadow:none}
+
+
+/* ===== Cards & grid ===== */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card h2{font-size:15.5px;margin:0 0 12px;font-weight:800;display:flex;align-items:center;gap:7px}
+.card h3{font-size:13.5px;margin:0 0 8px;font-weight:800;color:var(--primary-dark)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+
+/* hero balance card */
+.hero{
+  background:linear-gradient(150deg,var(--primary),var(--primary-dark));
+  color:#fff;border:0;border-radius:20px;padding:20px 18px;margin-bottom:12px;
+  box-shadow:0 10px 26px rgba(10,60,54,.22);position:relative;overflow:hidden
+}
+.hero:before{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hero .label{font-size:12px;opacity:.85;font-weight:600;letter-spacing:.3px}
+.hero .value{font-size:34px;font-weight:800;margin-top:4px;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.hero small{opacity:.8;font-size:12px}
+
+.metric{position:relative}
+.metric .label{font-size:11.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.metric .value{font-size:19px;font-weight:800;margin-top:5px;font-variant-numeric:tabular-nums;color:var(--text)}
+.metric small{color:var(--faint);font-size:11px;display:block;margin-top:2px}
+
+/* ===== Forms ===== */
+label{display:block;font-size:12px;font-weight:700;color:#3d4b46;margin:12px 0 6px}
+input,select,textarea{
+  width:100%;border:1.5px solid #dbe3e0;border-radius:var(--radius-sm);padding:11px 12px;
+  font:inherit;font-size:14.5px;background:#fbfdfc;color:var(--text);transition:border-color .12s
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);background:#fff}
+textarea{min-height:66px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+button.primary,button.secondary,button.danger{
+  border:0;border-radius:var(--radius-sm);padding:12px 16px;font-weight:800;font-size:13.5px;cursor:pointer;
+}
+button.primary{background:var(--primary);color:#fff;box-shadow:0 3px 10px rgba(13,107,98,.28)}
+button.primary:active{background:var(--primary-dark)}
+button.secondary{background:var(--primary-soft);color:var(--primary-dark)}
+button.secondary:active{background:#d5ebe6}
+button.danger{background:var(--danger-soft);color:var(--danger)}
+
+/* segmented quick-action pair on dashboard */
+.quickpair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quickpair button{padding:14px 10px;font-size:13px}
+
+/* ===== Notices / empty states ===== */
+.notice{background:var(--primary-soft);border:1px solid #c7e6df;color:#0f4b44;padding:11px 13px;border-radius:var(--radius-sm);font-size:12.8px;line-height:1.55;margin-bottom:12px}
+.empty{text-align:center;color:var(--faint);padding:26px 10px;font-size:13px}
+
+/* ===== Tables (JS-generated) ===== */
+table{width:100%;border-collapse:collapse;font-size:12.8px}
+th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;font-weight:800;background:#fafcfb}
+tr:last-child td{border-bottom:0}
+#rsheetTable,#historyTable,#monthlyDetail,#tierAnalysis{overflow-x:auto}
+#rsheetTable table th.thPrev{background:var(--amber-soft);color:#7a4e0c}
+#rsheetTable table th.thTotal{background:#e1f5ec;color:#0d5c3a}
+#rsheetTable table th.thSqu{background:#e3f0fb;color:#0d4f7a}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:800;letter-spacing:.2px}
+.recharge{background:#e1f5ec;color:#0d5c3a}
+.check{background:#e3f0fb;color:#0d4f7a}
+.opening{background:var(--amber-soft);color:#7a4e0c}
+
+.right{text-align:right}
+footer{color:var(--faint);font-size:10.5px;text-align:center;padding:18px 10px 6px}
+
+@media(min-width:560px){.grid{grid-template-columns:repeat(4,1fr)}.row{grid-template-columns:1fr 1fr}}
+@media(max-width:400px){.headrow h1{font-size:15.5px}.hero .value{font-size:29px}}
 </style>
 </head>
 <body>
-<header><h1>⚡ Prepaid Meter Ledger</h1><p>অফলাইন প্রিপেইড বিদ্যুৎ মিটারের হিসাব — Recharge, Balance, খরচ ও Daily Average</p></header>
-<main>
+<header>
+  <div class="headrow">
+    <div class="mark">⚡</div>
+    <div>
+      <h1>Prepaid Meter Ledger</h1>
+      <p>অফলাইন বিদ্যুৎ মিটার হিসাব — Recharge · Balance · Daily খরচ</p>
+    </div>
+  </div>
+</header>
 <nav id="nav">
-<button data-page="dashboard" class="active">ড্যাশবোর্ড</button>
-<button data-page="add">এন্ট্রি</button>
-<button data-page="history">ইতিহাস</button>
-<button data-page="monthly">মাসিক রিপোর্ট</button>
-<button data-page="rsheet">রিচার্জ শীট</button>
-<button data-page="tariff">ট্যারিফ</button>
-<button data-page="backup">Backup</button>
+<button data-page="dashboard"><span class="navicon">🏠</span><span>ড্যাশবোর্ড</span></button>
+<button data-page="add"><span class="navicon">➕</span><span>এন্ট্রি</span></button>
+<button data-page="history"><span class="navicon">📜</span><span>ইতিহাস</span></button>
+<button data-page="monthly"><span class="navicon">📅</span><span>মাসিক</span></button>
+<button data-page="rsheet"><span class="navicon">🧾</span><span>রিচার্জ শীট</span></button>
+<button data-page="tariff"><span class="navicon">⚙️</span><span>ট্যারিফ</span></button>
+<button data-page="backup"><span class="navicon">☁️</span><span>Backup</span></button>
 </nav>
 
-<section id="dashboard" class="page active">
-<div class="notice">সব হিসাব আপনার ফোনের browser-এই সংরক্ষণ হবে। Internet ছাড়াও কাজ করবে। প্রথমে একটি <b>Opening Balance</b> দিন, তারপর যখনই মিটার দেখবেন শুধু balance ও date/time লিখুন। Recharge আলাদা করে লিখলে মাঝের সময়ের আসল খরচ নিজে বের হবে।</div>
-<div class="grid">
-<div class="card metric"><div class="label">বর্তমান Balance</div><div class="value" id="dBalance">—</div><small id="dTier">সর্বশেষ check</small></div>
-<div class="card metric"><div class="label">Last Recharge</div><div class="value" id="dLastRecharge">—</div><small id="dLastRechargeDate">—</small></div>
-<div class="card metric"><div class="label">গড় খরচ / দিন</div><div class="value" id="dAvg">—</div><small>সর্বশেষ পর্যবেক্ষণ থেকে</small></div>
-<div class="card metric"><div class="label">এই মাসে খরচ</div><div class="value" id="dMonth">—</div><small id="dMonthCompare">মিটার balance ভিত্তিক</small></div>
-<div class="card metric"><div class="label">Estimated Remaining</div><div class="value" id="dDays">—</div><small>বর্তমান average অনুযায়ী</small></div>
-<div class="card metric"><div class="label">এই মাসের Recharge</div><div class="value" id="dMonthRecharge">—</div><small>current month</small></div>
+<main>
+
+<section id="dashboard">
+<div class="notice">সব হিসাব আপনার ফোনের browser-এই সংরক্ষণ হবে। Internet ছাড়াও কাজ করবে। প্রথমে একটি <b>Opening Balance</b> দিন, তারপর যখনই মিটার দেখবেন শুধু balance ও date/time লিখুন। Recharge আলাদা করে লিখলে মাঝের সময়ের আসল খরচ নিজে বের হবে।</div>
+
+<div class="hero">
+  <div class="label">বর্তমান Balance</div>
+  <div class="value" id="dBalance">—</div>
+  <small id="dTier">সর্বশেষ check</small>
 </div>
-<div class="card"><h2>সাম্প্রতিক হিসাব</h2><div id="dashText" class="empty">এখনও কোনো entry নেই।</div></div>
+
+<div class="grid">
+<div class="card metric"><div class="label">Last Recharge</div><div class="value" id="dLastRecharge">—</div><small id="dLastRechargeDate">—</small></div>
+<div class="card metric"><div class="label">গড় খরচ / দিন</div><div class="value" id="dAvg">—</div><small>সর্বশেষ পর্যবেক্ষণ থেকে</small></div>
+<div class="card metric"><div class="label">এই মাসে খরচ</div><div class="value" id="dMonth">—</div><small id="dMonthCompare">মিটার balance ভিত্তিক</small></div>
+<div class="card metric"><div class="label">Estimated বাকি দিন</div><div class="value" id="dDays">—</div><small>বর্তমান average অনুযায়ী</small></div>
+</div>
+
+<div class="card metric" style="margin-bottom:12px"><div class="label">এই মাসের Recharge</div><div class="value" id="dMonthRecharge">—</div><small>current month</small></div>
+
+<div class="card"><h2>🕓 সাম্প্রতিক হিসাব</h2><div id="dashText" class="empty">এখনও কোনো entry নেই।</div></div>
 <div class="card"><h2>⚡ Tariff Tier Analysis</h2><div id="tierAnalysis" class="empty">কমপক্ষে দুইটি Balance Check দিলে এখানে Tier change ও আনুমানিক energy-rate impact দেখা যাবে।</div></div>
 <div class="card"><h2>📈 Consumption Trend</h2>
 <div id="usageSummary" class="notice">দুইটি বা তার বেশি Balance Check দিলে consumption trend তৈরি হবে।</div>
 <canvas id="usageChart" height="190" style="width:100%;display:block"></canvas>
 </div>
 <div class="card"><h2>📅 Monthly Comparison</h2><div id="monthComparison" class="empty">একাধিক মাসের হিসাব হলে এখানে তুলনা দেখা যাবে।</div></div>
-<div class="card"><h2>দ্রুত কাজ</h2><div class="actions">
+<div class="card"><h2>দ্রুত কাজ</h2><div class="quickpair">
 <button class="primary" onclick="showPage('add');setType('check')">🔎 Balance Check</button>
 <button class="secondary" onclick="showPage('add');setType('recharge')">💳 Recharge</button>
 </div></div>
 </section>
 
-<section id="add" class="page">
+<details id="add" class="menu">
+<summary><span class="ico">➕</span> এন্ট্রি<span class="chev">⌄</span></summary>
+<div class="menubody">
 <div class="card">
 <h2 id="formTitle">Balance Check</h2>
 <div class="row">
@@ -84,8 +216,8 @@ footer{color:var(--muted);font-size:11px;text-align:center;padding:15px}
 <option value="">— Select Tier —</option>
 <option value="Lifeline">Lifeline</option>
 <option value="1st">১ম ধাপ</option>
-<option value="2nd">২য় ধাপ</option>
-<option value="3rd">৩য় ধাপ</option>
+<option value="2nd">২য় ধাপ</option>
+<option value="3rd">৩য় ধাপ</option>
 <option value="4th">৪র্থ ধাপ</option>
 <option value="5th">৫ম ধাপ</option>
 <option value="6th">৬ষ্ঠ ধাপ</option>
@@ -101,20 +233,26 @@ footer{color:var(--muted);font-size:11px;text-align:center;padding:15px}
 <label>Squ / Token No. (ঐচ্ছিক)</label><input id="tokenNo" type="text" placeholder="যেমন 26">
 </div>
 <label>Note (ঐচ্ছিক)</label><textarea id="note" placeholder="যেমন: 7 Aug recharge, meter balance 2400+"></textarea>
-<div class="actions"><button class="primary" onclick="saveEntry()">Save Entry</button><button class="secondary" onclick="clearForm()">Clear</button></div>
+<div class="actions"><button class="primary" onclick="saveEntry()">✓ Save Entry</button><button class="secondary" onclick="clearForm()">Clear</button></div>
 </div>
-<div class="card"><h3>Month-End কীভাবে ব্যবহার করবেন</h3><p style="font-size:13px;line-height:1.6;margin:0">মাসের শেষ দিনে <b>Month-End Closing Balance</b> select করে meter-এর final balance দিন। App ওই balance পর্যন্ত মাসের মোট cost হিসাব করবে। এরপর সেই closing balance-ই পরের মাসের <b>Opening / Carry Forward</b> হিসেবে automatically ব্যবহার করবে। মাঝখানে recharge থাকলেও হিসাবের মধ্যে যোগ হবে।</p></div>
+<div class="card"><h3>Month-End কীভাবে ব্যবহার করবেন</h3><p style="font-size:12.8px;line-height:1.6;margin:0;color:var(--muted)">মাসের শেষ দিনে <b>Month-End Closing Balance</b> select করে meter-এর final balance দিন। App ওই balance পর্যন্ত মাসের মোট cost হিসাব করবে। এরপর সেই closing balance-ই পরের মাসের <b>Opening / Carry Forward</b> হিসেবে automatically ব্যবহার করবে। মাঝখানে recharge থাকলেও হিসাবের মধ্যে যোগ হবে।</p></div>
 <div class="card"><h3>আপনার উদাহরণ কীভাবে লিখবেন</h3>
-<p style="font-size:13px;line-height:1.6;margin:0">যেমন 31 July-তে Opening Balance = ৳200+। 7 Aug-এ Recharge = ৳2,500 এবং একই সময় Balance Check = ৳2,400+। তখন মিটারে যে Tariff Tier দেখাবে সেটিও select করবে। আজ Balance = ৳1,600+ এবং আজকের Tier-ও select করবে। অ্যাপ দুই Balance Check-এর মাঝে যত Recharge হয়েছে তা যোগ করে আসল cash consumption ও daily average বের করবে এবং কোন সময়ে কোন Tier ছিল সেটিও history-তে রাখবে।</p>
+<p style="font-size:12.8px;line-height:1.6;margin:0;color:var(--muted)">যেমন 31 July-তে Opening Balance = ৳200+। 7 Aug-এ Recharge = ৳2,500 এবং একই সময় Balance Check = ৳2,400+। তখন মিটারে যে Tariff Tier দেখাবে সেটিও select করবে। আজ Balance = ৳1,600+ এবং আজকের Tier-ও select করবে। অ্যাপ দুই Balance Check-এর মাঝে যত Recharge হয়েছে তা যোগ করে আসল cash consumption ও daily average বের করবে এবং কোন সময়ে কোন Tier ছিল সেটিও history-তে রাখবে।</p>
 </div>
-</section>
+</div>
+</details>
 
-<section id="history" class="page">
-<div class="card"><h2>সব Entry</h2><div id="historyTable"></div></div>
-</section>
+<details id="history" class="menu">
+<summary><span class="ico">📜</span> ইতিহাস<span class="chev">⌄</span></summary>
+<div class="menubody">
+<div class="card"><div id="historyTable"></div></div>
+</div>
+</details>
 
-<section id="monthly" class="page">
-<div class="card"><h2>মাসিক রিপোর্ট</h2><label>মাস নির্বাচন</label><input id="monthPick" type="month" onchange="renderAll()"></div>
+<details id="monthly" class="menu">
+<summary><span class="ico">📅</span> মাসিক রিপোর্ট<span class="chev">⌄</span></summary>
+<div class="menubody">
+<div class="card"><label>মাস নির্বাচন</label><input id="monthPick" type="month" onchange="renderAll()"></div>
 <div class="grid">
 <div class="card metric"><div class="label">Opening Balance</div><div class="value" id="mOpen">—</div></div>
 <div class="card metric"><div class="label">Total Recharge</div><div class="value" id="mRecharge">—</div></div>
@@ -122,45 +260,57 @@ footer{color:var(--muted);font-size:11px;text-align:center;padding:15px}
 <div class="card metric"><div class="label">Average / Day</div><div class="value" id="mAvg">—</div></div>
 </div>
 <div class="card"><h3>এই মাসের হিসাব</h3><div id="monthlyDetail"></div></div>
-</section>
-
-<section id="rsheet" class="page">
-<div class="card"><h2>রিচার্জ শীট</h2><p style="font-size:13px;color:var(--muted);margin:0 0 10px">আপনার পুরনো spreadsheet-এর মতো: Date, Cash Tk, Previous Tk, Credited, Total, Squ No.</p>
-<div id="rsheetTable" style="overflow:auto"></div></div>
-</section>
-<section id="tariff" class="page">
-<div class="card"><h2>আবাসিক LT-A — আপনার দেওয়া ২০২৬ Rate</h2>
-<div class="notice">ছবির BERC rate অনুযায়ী energy rate রাখা হয়েছে। Actual prepaid deduction-এর মধ্যে demand charge, VAT/অন্যান্য adjustment থাকতে পারে—তাই meter-এর আসল balance history-কে primary হিসাব হিসেবে ধরা হয়েছে।</div>
-<table><tr><th>ধাপ</th><th>Unit</th><th>৳/kWh</th></tr>
-<tr><td>Lifeline</td><td>0–50</td><td>5.32</td></tr><tr><td>প্রথম ধাপ</td><td>0–75</td><td>6.18</td></tr>
-<tr><td>দ্বিতীয়</td><td>76–200</td><td>8.50</td></tr><tr><td>তৃতীয়</td><td>201–300</td><td>9.10</td></tr>
-<tr><td>চতুর্থ</td><td>301–400</td><td>9.62</td></tr><tr><td>পঞ্চম</td><td>401–600</td><td>15.01</td></tr>
-<tr><td>ষষ্ঠ</td><td>600+</td><td>17.55</td></tr></table>
-<p style="font-size:12px;color:var(--muted)">নোট: আপনার ছবিতে demand charge ৳42.00/kW/month দেখা যাচ্ছে। App-এর actual balance calculation-এ এটি আলাদা করে ধরে নেওয়া হয়নি, কারণ prepaid meter-এ আপনার বাস্তব deduction-ই সবচেয়ে নির্ভরযোগ্য।</p>
 </div>
-<div class="card"><h2>Quick Energy Cost Estimate</h2><label>এই মাসে মোট unit (kWh)</label><input id="calcUnits" type="number" step="0.01" placeholder="যেমন 250" oninput="calcTariff()"><div id="tariffResult" class="notice" style="margin-top:10px">Unit লিখলে আনুমানিক energy charge দেখাবে।</div></div>
-</section>
+</details>
 
-<section id="backup" class="page">
-<div class="card"><h2>Backup / Restore</h2><p style="font-size:13px;color:var(--muted)">ফোন change/reset করার আগে JSON backup নিন। Restore করলে বর্তমান data-এর সাথে নতুন data যোগ হবে না—পুরোনো data replace হবে।</p>
+<details id="rsheet" class="menu">
+<summary><span class="ico">🧾</span> রিচার্জ শীট<span class="chev">⌄</span></summary>
+<div class="menubody">
+<div class="card"><p style="font-size:12.8px;color:var(--muted);margin:0 0 10px">আপনার পুরনো spreadsheet-এর মতো: Date, Cash Tk, Previous Tk, Credited, Total, Squ No.</p>
+<div id="rsheetTable" style="overflow:auto"></div></div>
+</div>
+</details>
+
+<details id="tariff" class="menu">
+<summary><span class="ico">⚙️</span> ট্যারিফ<span class="chev">⌄</span></summary>
+<div class="menubody">
+<div class="card"><h2>আবাসিক LT-A — আপনার দেওয়া ২০২৬ Rate</h2>
+<div class="notice">ছবির BERC rate অনুযায়ী energy rate রাখা হয়েছে। Actual prepaid deduction-এর মধ্যে demand charge, VAT/অন্যান্য adjustment থাকতে পারে—তাই meter-এর আসল balance history-কে primary হিসাব হিসেবে ধরা হয়েছে।</div>
+<div style="overflow-x:auto"><table><tr><th>ধাপ</th><th>Unit</th><th>৳/kWh</th></tr>
+<tr><td>Lifeline</td><td>0–50</td><td>5.32</td></tr><tr><td>প্রথম ধাপ</td><td>0–75</td><td>6.18</td></tr>
+<tr><td>দ্বিতীয়</td><td>76–200</td><td>8.50</td></tr><tr><td>তৃতীয়</td><td>201–300</td><td>9.10</td></tr>
+<tr><td>চতুর্থ</td><td>301–400</td><td>9.62</td></tr><tr><td>পঞ্চম</td><td>401–600</td><td>15.01</td></tr>
+<tr><td>ষষ্ঠ</td><td>600+</td><td>17.55</td></tr></table></div>
+<p style="font-size:11.5px;color:var(--faint);margin-top:10px">নোট: আপনার ছবিতে demand charge ৳42.00/kW/month দেখা যাচ্ছে। App-এর actual balance calculation-এ এটি আলাদা করে ধরে নেওয়া হয়নি, কারণ prepaid meter-এ আপনার বাস্তব deduction-ই সবচেয়ে নির্ভরযোগ্য।</p>
+</div>
+<div class="card"><h2>🧮 Quick Energy Cost Estimate</h2><label>এই মাসে মোট unit (kWh)</label><input id="calcUnits" type="number" step="0.01" placeholder="যেমন 250" oninput="calcTariff()"><div id="tariffResult" class="notice" style="margin-top:10px">Unit লিখলে আনুমানিক energy charge দেখাবে।</div></div>
+</div>
+</details>
+
+<details id="backup" class="menu">
+<summary><span class="ico">☁️</span> Backup<span class="chev">⌄</span></summary>
+<div class="menubody">
+<div class="card"><h2>💾 Backup / Restore</h2><p style="font-size:12.8px;color:var(--muted)">ফোন change/reset করার আগে JSON backup নিন। Restore করলে বর্তমান data-এর সাথে নতুন data যোগ হবে না—পুরোনো data replace হবে।</p>
 <div class="actions"><button class="primary" onclick="downloadBackup()">⬇ Backup JSON</button><button class="secondary" onclick="document.getElementById('file').click()">⬆ Restore JSON</button><input id="file" type="file" accept=".json" hidden onchange="restoreBackup(event)"></div>
-<hr style="border:0;border-top:1px solid var(--line);margin:15px 0">
+<hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
 <button class="danger" onclick="resetAll()">সব data মুছে ফেলুন</button>
 </div>
 
-<div class="card"><h2>☁ Cloud Backup (GitHub Gist)</h2>
-<p style="font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 10px">আপনার নিজের GitHub account-এর একটি secret Gist-এ backup রাখা হবে। শুধু <b>gist</b> permission-এর একটি Personal Access Token লাগবে — repo access লাগবে না। Token শুধু আপনার ফোনের browser-এ থাকে, অন্য কোথাও পাঠানো হয় না।</p>
+<div class="card"><h2>☁️ Cloud Backup (GitHub Gist)</h2>
+<p style="font-size:12.8px;color:var(--muted);line-height:1.6;margin:0 0 10px">আপনার নিজের GitHub account-এর একটি secret Gist-এ backup রাখা হবে। শুধু <b>gist</b> permission-এর একটি Personal Access Token লাগবে — repo access লাগবে না। Token শুধু আপনার ফোনের browser-এ থাকে, অন্য কোথাও পাঠানো হয় না।</p>
 <div class="actions"><button class="secondary" onclick="window.open('https://github.com/settings/tokens/new?scopes=gist&description=Prepaid%20Meter%20Ledger%20Backup','_blank')">🔑 Token তৈরি করুন</button></div>
 <label>GitHub Personal Access Token</label><input id="cloudToken" type="password" placeholder="ghp_...">
 <div class="actions"><button class="primary" onclick="saveCloudToken()">Save Token</button></div>
-<label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:600;font-size:13px"><input id="autoBackupChk" type="checkbox" style="width:auto"> প্রতিটি entry save-এ automatic cloud backup</label>
+<label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-weight:600;font-size:13px"><input id="autoBackupChk" type="checkbox" style="width:auto"> প্রতিটি entry save-এ automatic cloud backup</label>
 <div class="actions" style="margin-top:10px">
 <button class="primary" onclick="backupToCloud(true)">☁ Backup Now</button>
 <button class="secondary" onclick="restoreFromCloud()">⬇ Restore from Cloud</button>
 </div>
 <div id="cloudStatus" class="notice" style="margin-top:10px">Cloud backup এখনো সেটআপ করা হয়নি।</div>
 </div>
-</section>
+</div>
+</details>
+
 <footer>Prepaid Meter Ledger • Data stays on this device/browser</footer>
 </main>
 
@@ -173,7 +323,7 @@ document.getElementById('dt').value=nowLocal();
 document.getElementById('monthPick').value=new Date().toISOString().slice(0,7);
 
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
-function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(p).classList.add('active');document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));renderAll()}
+function showPage(p){const el=document.getElementById(p);if(!el)return;if(el.tagName==='DETAILS')el.open=true;el.scrollIntoView({behavior:'smooth',block:'start'});renderAll()}
 function setType(t){document.getElementById('type').value=t;document.getElementById('checkFields').style.display=t==='recharge'?'none':'block';document.getElementById('rechargeFields').style.display=t==='recharge'?'block':'none';document.getElementById('formTitle').textContent=t==='recharge'?'Recharge':t==='opening'?'Opening Balance':t==='monthend'?'Month-End Closing Balance':'Balance Check'}
 function clearForm(){document.getElementById('dt').value=nowLocal();document.getElementById('balance').value='';document.getElementById('tier').value='';document.getElementById('recharge').value='';document.getElementById('energyCost').value='';document.getElementById('units').value='';document.getElementById('note').value='';document.getElementById('cashPaid').value='';document.getElementById('previousTk').value='';document.getElementById('tokenNo').value=''}
 function saveEntry(){
@@ -458,7 +608,7 @@ document.getElementById('cloudToken').value=data.cloud.token||'';
 document.getElementById('autoBackupChk').checked=!!data.cloud.autoBackup;
 document.getElementById('autoBackupChk').onchange=e=>{ensureCloud();data.cloud.autoBackup=e.target.checked;localStorage.setItem(KEY,JSON.stringify(data))};
 renderCloudStatus(data.cloud.lastSync?('সর্বশেষ cloud backup: '+fmtDate(data.cloud.lastSync)):'Cloud backup এখনো সেটআপ করা হয়নি।');
-window.addEventListener('resize',()=>{if(document.getElementById('dashboard').classList.contains('active'))drawUsageChart()});
+window.addEventListener('resize',()=>{drawUsageChart()});
 </script>
 <script>
 if('serviceWorker' in navigator){
