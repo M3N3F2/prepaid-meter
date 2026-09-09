@@ -48,31 +48,42 @@ nav{
   position:fixed;left:0;right:0;bottom:0;z-index:20;
   background:#fff;border-top:1px solid var(--line);
   display:grid;grid-template-columns:repeat(4,1fr);
-  padding:6px 2px calc(6px + env(safe-area-inset-bottom));
+  gap:2px 4px;
+  padding:10px 6px calc(10px + env(safe-area-inset-bottom));
   box-shadow:0 -3px 16px rgba(15,30,26,.07);
 }
 nav button{
   border:0;background:none;color:var(--muted);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  padding:7px 2px;border-radius:11px;font-weight:700;font-size:9.8px;line-height:1.1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  padding:6px 2px 4px;border-radius:14px;font-weight:700;font-size:10.5px;line-height:1.15;
 }
-nav button .navicon{font-size:19px;line-height:1}
-nav button:active{background:var(--primary-soft);color:var(--primary-dark)}
+nav button .navicon{
+  font-size:23px;line-height:1;
+  width:48px;height:48px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--primary-soft);
+  box-shadow:inset 0 0 0 1px rgba(13,107,98,.08);
+}
+nav button:active .navicon{background:var(--primary);transform:scale(.94)}
+nav button:active{color:var(--primary-dark)}
 
-main{max-width:760px;margin:auto;padding:14px 12px 128px}
+main{max-width:760px;margin:auto;padding:14px 12px 158px}
 
 /* ===== Collapsible menu sections ===== */
-details.menu{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;box-shadow:var(--shadow);overflow:hidden}
-details.menu>summary{list-style:none;cursor:pointer;padding:16px;display:flex;align-items:center;gap:9px;font-weight:800;font-size:14.5px;color:var(--text);user-select:none}
-details.menu>summary::-webkit-details-marker{display:none}
-details.menu>summary .ico{font-size:17px;flex-shrink:0}
-details.menu>summary .chev{margin-left:auto;color:var(--faint);font-size:13px;transition:transform .18s;flex-shrink:0}
-details.menu[open]>summary .chev{transform:rotate(180deg)}
-details.menu[open]>summary{border-bottom:1px solid var(--line)}
-details.menu>.menubody{padding:14px 16px 16px}
-details.menu>.menubody>.card:first-child{margin-top:0}
-details.menu>.menubody>.card:last-child{margin-bottom:0}
-details.menu .card{background:#fafcfb;box-shadow:none}
+.page{display:none}
+.page.active{display:block;animation:fadein .16s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.pagehead{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.pagehead h2{margin:0;font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px}
+.backbtn{border:0;background:var(--primary-soft);color:var(--primary-dark);width:38px;height:38px;border-radius:50%;font-size:17px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.backbtn:active{background:var(--primary);color:#fff}
+
+/* ===== Home grid (dashboard menu launcher) ===== */
+.homegrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 6px;text-align:center;margin-bottom:12px}
+.homegrid button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:7px;padding:2px}
+.homegrid .gico{width:52px;height:52px;border-radius:50%;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;font-size:24px}
+.homegrid span{font-size:11px;font-weight:700;color:var(--text);line-height:1.2}
+.homegrid button:active .gico{background:var(--primary);transform:scale(.95)}
 
 
 /* ===== Cards & grid ===== */
@@ -130,7 +141,9 @@ table{width:100%;border-collapse:collapse;font-size:12.8px}
 th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 th{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;font-weight:800;background:#fafcfb}
 tr:last-child td{border-bottom:0}
-#rsheetTable,#historyTable,#monthlyDetail,#tierAnalysis{overflow-x:auto}
+#rsheetTable,#historyTable,#monthlyDetail,#tierAnalysis{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#rsheetTable table,#historyTable table,#monthlyDetail table,#tierAnalysis table{white-space:nowrap;width:auto}
+#rsheetTable th,#rsheetTable td,#historyTable th,#historyTable td,#monthlyDetail th,#monthlyDetail td,#tierAnalysis th,#tierAnalysis td{white-space:nowrap}
 #rsheetTable table th.thPrev{background:var(--amber-soft);color:#7a4e0c}
 #rsheetTable table th.thTotal{background:#e1f5ec;color:#0d5c3a}
 #rsheetTable table th.thSqu{background:#e3f0fb;color:#0d4f7a}
@@ -169,7 +182,7 @@ footer{color:var(--faint);font-size:10.5px;text-align:center;padding:18px 10px 6
 
 <main>
 
-<section id="dashboard">
+<section id="dashboard" class="page active">
 <div class="notice">সব হিসাব আপনার ফোনের browser-এই সংরক্ষণ হবে। Internet ছাড়াও কাজ করবে। প্রথমে একটি <b>Opening Balance</b> দিন, তারপর যখনই মিটার দেখবেন শুধু balance ও date/time লিখুন। Recharge আলাদা করে লিখলে মাঝের সময়ের আসল খরচ নিজে বের হবে।</div>
 
 <div class="hero">
@@ -194,15 +207,23 @@ footer{color:var(--faint);font-size:10.5px;text-align:center;padding:18px 10px 6
 <canvas id="usageChart" height="190" style="width:100%;display:block"></canvas>
 </div>
 <div class="card"><h2>📅 Monthly Comparison</h2><div id="monthComparison" class="empty">একাধিক মাসের হিসাব হলে এখানে তুলনা দেখা যাবে।</div></div>
-<div class="card"><h2>দ্রুত কাজ</h2><div class="quickpair">
+<div class="card"><h2>মেনু</h2>
+<div class="homegrid">
+<button onclick="showPage('add')"><span class="gico">➕</span><span>এন্ট্রি</span></button>
+<button onclick="showPage('history')"><span class="gico">📜</span><span>ইতিহাস</span></button>
+<button onclick="showPage('monthly')"><span class="gico">📅</span><span>মাসিক রিপোর্ট</span></button>
+<button onclick="showPage('rsheet')"><span class="gico">🧾</span><span>রিচার্জ শীট</span></button>
+<button onclick="showPage('tariff')"><span class="gico">⚙️</span><span>ট্যারিফ</span></button>
+<button onclick="showPage('backup')"><span class="gico">☁️</span><span>Backup</span></button>
+</div>
+<div class="quickpair">
 <button class="primary" onclick="showPage('add');setType('check')">🔎 Balance Check</button>
 <button class="secondary" onclick="showPage('add');setType('recharge')">💳 Recharge</button>
 </div></div>
 </section>
 
-<details id="add" class="menu">
-<summary><span class="ico">➕</span> এন্ট্রি<span class="chev">⌄</span></summary>
-<div class="menubody">
+<section id="add" class="page">
+<div class="pagehead"><button class="backbtn" onclick="showPage('dashboard')">←</button><h2>➕ এন্ট্রি</h2></div>
 <div class="card">
 <h2 id="formTitle">Balance Check</h2>
 <div class="row">
@@ -240,18 +261,16 @@ footer{color:var(--faint);font-size:10.5px;text-align:center;padding:18px 10px 6
 <p style="font-size:12.8px;line-height:1.6;margin:0;color:var(--muted)">যেমন 31 July-তে Opening Balance = ৳200+। 7 Aug-এ Recharge = ৳2,500 এবং একই সময় Balance Check = ৳2,400+। তখন মিটারে যে Tariff Tier দেখাবে সেটিও select করবে। আজ Balance = ৳1,600+ এবং আজকের Tier-ও select করবে। অ্যাপ দুই Balance Check-এর মাঝে যত Recharge হয়েছে তা যোগ করে আসল cash consumption ও daily average বের করবে এবং কোন সময়ে কোন Tier ছিল সেটিও history-তে রাখবে।</p>
 </div>
 </div>
-</details>
+</section>
 
-<details id="history" class="menu">
-<summary><span class="ico">📜</span> ইতিহাস<span class="chev">⌄</span></summary>
-<div class="menubody">
+<section id="history" class="page">
+<div class="pagehead"><button class="backbtn" onclick="showPage('dashboard')">←</button><h2>📜 ইতিহাস</h2></div>
 <div class="card"><div id="historyTable"></div></div>
 </div>
-</details>
+</section>
 
-<details id="monthly" class="menu">
-<summary><span class="ico">📅</span> মাসিক রিপোর্ট<span class="chev">⌄</span></summary>
-<div class="menubody">
+<section id="monthly" class="page">
+<div class="pagehead"><button class="backbtn" onclick="showPage('dashboard')">←</button><h2>📅 মাসিক রিপোর্ট</h2></div>
 <div class="card"><label>মাস নির্বাচন</label><input id="monthPick" type="month" onchange="renderAll()"></div>
 <div class="grid">
 <div class="card metric"><div class="label">Opening Balance</div><div class="value" id="mOpen">—</div></div>
@@ -261,19 +280,17 @@ footer{color:var(--faint);font-size:10.5px;text-align:center;padding:18px 10px 6
 </div>
 <div class="card"><h3>এই মাসের হিসাব</h3><div id="monthlyDetail"></div></div>
 </div>
-</details>
+</section>
 
-<details id="rsheet" class="menu">
-<summary><span class="ico">🧾</span> রিচার্জ শীট<span class="chev">⌄</span></summary>
-<div class="menubody">
+<section id="rsheet" class="page">
+<div class="pagehead"><button class="backbtn" onclick="showPage('dashboard')">←</button><h2>🧾 রিচার্জ শীট</h2></div>
 <div class="card"><p style="font-size:12.8px;color:var(--muted);margin:0 0 10px">আপনার পুরনো spreadsheet-এর মতো: Date, Cash Tk, Previous Tk, Credited, Total, Squ No.</p>
 <div id="rsheetTable" style="overflow:auto"></div></div>
 </div>
-</details>
+</section>
 
-<details id="tariff" class="menu">
-<summary><span class="ico">⚙️</span> ট্যারিফ<span class="chev">⌄</span></summary>
-<div class="menubody">
+<section id="tariff" class="page">
+<div class="pagehead"><button class="backbtn" onclick="showPage('dashboard')">←</button><h2>⚙️ ট্যারিফ</h2></div>
 <div class="card"><h2>আবাসিক LT-A — আপনার দেওয়া ২০২৬ Rate</h2>
 <div class="notice">ছবির BERC rate অনুযায়ী energy rate রাখা হয়েছে। Actual prepaid deduction-এর মধ্যে demand charge, VAT/অন্যান্য adjustment থাকতে পারে—তাই meter-এর আসল balance history-কে primary হিসাব হিসেবে ধরা হয়েছে।</div>
 <div style="overflow-x:auto"><table><tr><th>ধাপ</th><th>Unit</th><th>৳/kWh</th></tr>
@@ -285,11 +302,10 @@ footer{color:var(--faint);font-size:10.5px;text-align:center;padding:18px 10px 6
 </div>
 <div class="card"><h2>🧮 Quick Energy Cost Estimate</h2><label>এই মাসে মোট unit (kWh)</label><input id="calcUnits" type="number" step="0.01" placeholder="যেমন 250" oninput="calcTariff()"><div id="tariffResult" class="notice" style="margin-top:10px">Unit লিখলে আনুমানিক energy charge দেখাবে।</div></div>
 </div>
-</details>
+</section>
 
-<details id="backup" class="menu">
-<summary><span class="ico">☁️</span> Backup<span class="chev">⌄</span></summary>
-<div class="menubody">
+<section id="backup" class="page">
+<div class="pagehead"><button class="backbtn" onclick="showPage('dashboard')">←</button><h2>☁️ Backup</h2></div>
 <div class="card"><h2>💾 Backup / Restore</h2><p style="font-size:12.8px;color:var(--muted)">ফোন change/reset করার আগে JSON backup নিন। Restore করলে বর্তমান data-এর সাথে নতুন data যোগ হবে না—পুরোনো data replace হবে।</p>
 <div class="actions"><button class="primary" onclick="downloadBackup()">⬇ Backup JSON</button><button class="secondary" onclick="document.getElementById('file').click()">⬆ Restore JSON</button><input id="file" type="file" accept=".json" hidden onchange="restoreBackup(event)"></div>
 <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
@@ -309,7 +325,7 @@ footer{color:var(--faint);font-size:10.5px;text-align:center;padding:18px 10px 6
 <div id="cloudStatus" class="notice" style="margin-top:10px">Cloud backup এখনো সেটআপ করা হয়নি।</div>
 </div>
 </div>
-</details>
+</section>
 
 <footer>Prepaid Meter Ledger • Data stays on this device/browser</footer>
 </main>
@@ -323,7 +339,7 @@ document.getElementById('dt').value=nowLocal();
 document.getElementById('monthPick').value=new Date().toISOString().slice(0,7);
 
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
-function showPage(p){const el=document.getElementById(p);if(!el)return;if(el.tagName==='DETAILS')el.open=true;el.scrollIntoView({behavior:'smooth',block:'start'});renderAll()}
+function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));const el=document.getElementById(p);if(!el)return;el.classList.add('active');window.scrollTo(0,0);renderAll()}
 function setType(t){document.getElementById('type').value=t;document.getElementById('checkFields').style.display=t==='recharge'?'none':'block';document.getElementById('rechargeFields').style.display=t==='recharge'?'block':'none';document.getElementById('formTitle').textContent=t==='recharge'?'Recharge':t==='opening'?'Opening Balance':t==='monthend'?'Month-End Closing Balance':'Balance Check'}
 function clearForm(){document.getElementById('dt').value=nowLocal();document.getElementById('balance').value='';document.getElementById('tier').value='';document.getElementById('recharge').value='';document.getElementById('energyCost').value='';document.getElementById('units').value='';document.getElementById('note').value='';document.getElementById('cashPaid').value='';document.getElementById('previousTk').value='';document.getElementById('tokenNo').value=''}
 function saveEntry(){
